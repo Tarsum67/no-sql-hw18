@@ -1,58 +1,39 @@
-const mongoose = require('mongoose');
-const { Schema } = mongoose;
+const { Schema, model } = require('mongoose');
+const Reaction = require('./Reaction');
 
-// Reaction Schema (nested document)
-const reactionSchema = new Schema({
-  reactionId: {
-    type: mongoose.Types.ObjectId,
-    default: () => new mongoose.Types.ObjectId(),
-  },
-  reactionBody: {
-    type: String,
-    required: true,
-    maxlength: 280,
-  },
-  username: {
-    type: String,
-    required: true,
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-    get: (timestamp) => dateFormat(timestamp),
-  },
-});
+const thoughtSchema = new Schema(
+	{
+		thoughtText: {
+			type: String,
+			required: true,
+			minLength: 1,
+			maxLength: 280,
+		},
+		createdAt: {
+			type: Date,
+			default: Date.now,
+			get: function (date) { return date.toDateString() },
+		},
+		username: {
+			type: String,
+			required: true
+		},
+		reactions: [Reaction],
+	},
+	{
+		toJSON: {
+			getters: true,
+			virtuals: true,
+		},
+		id: false,
+	}
+);
 
-// Main Thought Schema
-const thoughtSchema = new Schema({
-  thoughtText: {
-    type: String,
-    required: true,
-    minlength: 1,
-    maxlength: 280,
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-    get: (timestamp) => dateFormat(timestamp),
-  },
-  username: {
-    type: String,
-    required: true,
-  },
-  reactions: [reactionSchema], // Array of nested documents using the reactionSchema
-});
+thoughtSchema.virtual('reactionCount')
+	.get(function () {
+		return this.reactions.length;
+	});
 
-// Create a virtual called reactionCount that retrieves the length of the thought's reactions array field on query.
-thoughtSchema.virtual('reactionCount').get(function () {
-  return this.reactions.length;
-});
-
-// Format the timestamp using a custom function
-function dateFormat(timestamp) {
-  return new Date(timestamp).toLocaleDateString();
-}
-
-const Thought = mongoose.model('Thought', thoughtSchema);
+const Thought = model('thought', thoughtSchema);
 
 module.exports = Thought;
